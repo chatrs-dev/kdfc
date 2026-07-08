@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Showcase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-black: #050505;
+            --gaming-yellow: #ffdf00;
+            --card-bg: #0f1218;
+            --accent-blue: #38bdf8;
+            --text-gray: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            padding: 30px;
+            display: flex;
+            gap: 15px;
+        }
+        .nav-item {
+            font-family: 'Oswald', sans-serif;
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 14px;
+            text-decoration: none;
+            border: 1px solid #2a2a2a;
+            background: #121212;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+        .nav-item.active {
+            background: var(--gaming-yellow);
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 223, 0, 0.3);
+        }
+
+        /* --- HORIZONTAL GRID (3 CARDS) --- */
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            padding: 40px;
+            width: 100%;
+            max-width: 1200px;
+            flex-wrap: nowrap; /* Keeps them in one line */
+        }
+
+        .card {
+            flex: 1;
+            max-width: 320px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid #1e293b;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-blue);
+        }
+
+        .photo-box {
+            position: relative;
+            height: 260px;
+            background: #161b22;
+        }
+
+        .photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .id-badge {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 3px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            letter-spacing: 1px;
+        }
+
+        .card-body {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .player-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 24px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .info-field {
+            background: #07090d;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--text-gray);
+            border: 1px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="nav-item">Home</a>
+        <a href="rule.html" class="nav-item">Rules</a>
+        <a href="help.html" class="nav-item">Help</a>     
+        <a href="card.html" class="nav-item active">player info </a>
+    </nav>
+
+    <div class="card-container" id="cardList">
+        <!-- Static Loading State -->
+        <p>Fetching Player Data...</p>
+    </div>
+
+    <script>
+        // REPLACE WITH YOUR FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyDc0l9Fr-i1RJchaaeRMlUUzwzT2v5zuTY",
+  authDomain: "card-beaa8.firebaseapp.com",
+  databaseURL: "https://card-beaa8-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "card-beaa8",
+  storageBucket: "card-beaa8.firebasestorage.app",
+  messagingSenderId: "973719246951",
+  appId: "1:973719246951:web:fac8c8beae6aba55329cc2",
+  measurementId: "G-BEFJY7RCDW"
+};
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function loadCards() {
+            // .limitToLast(3) ensures only the latest 3 players show
+            db.ref('players').limitToLast(3).on('value', (snapshot) => {
+                const cardList = document.getElementById('cardList');
+                cardList.innerHTML = '';
+                const data = snapshot.val();
+
+                if(data) {
+                    // Convert object to array and reverse to see newest first
+                    const players = Object.values(data).reverse();
+                    
+                    players.forEach(player => {
+                        cardList.innerHTML += `
+                            <div class="card">
+                                <div class="photo-box">
+                                    <img src="${player.photoURL}" alt="Player">
+                                    <div class="id-badge">ID: ${player.idName}</div>
+                                </div>
+                                <div class="card-body">
+                                    <h2 class="player-name">${player.name}</h2>
+                                    <div class="info-field"><span>🎮</span> ${player.uniqueID}</div>
+                                    <div class="info-field"><span>📱</span> ${player.device}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    cardList.innerHTML = '<p>No players found in database.</p>';
+                }
+            });
+        }
+
+        loadCards();
+    </script>
+</body>
+</html>

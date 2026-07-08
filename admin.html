@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KDFC Admin Pro</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --gold: #FFD700; --blue: #00F0FF; --red: #ff4444; --dark: #080808; --glass: rgba(30, 30, 40, 0.9); }
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; background: var(--dark); color: white; font-family: 'Rajdhani', sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1516216628859-9bccecab13ca?q=80&w=2000');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            height: 100vh; display: flex; overflow: hidden;
+        }
+        body::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.9); z-index:-1; }
+
+        /* Sidebar for PC */
+        .sidebar {
+            width: 280px; background: rgba(10, 10, 15, 0.98); border-right: 1px solid #333;
+            padding: 20px; display: flex; flex-direction: column; z-index: 100; flex-shrink: 0;
+        }
+        
+        /* Bottom Nav for Mobile */
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            .sidebar {
+                width: 100%; height: 70px; flex-direction: row; order: 2;
+                padding: 0; justify-content: space-around; align-items: center;
+                border-right: none; border-top: 1px solid #333; background: #050505;
+            }
+            .brand { display: none; }
+            .nav-btn { 
+                flex-direction: column; gap: 2px; padding: 10px; font-size: 0.7rem; 
+                margin: 0; justify-content: center; width: auto; text-align: center;
+            }
+            .nav-btn i { font-size: 1.3rem; }
+            .main { order: 1; height: calc(100vh - 70px); padding: 15px; }
+        }
+
+        .main { flex: 1; padding: 30px; overflow-y: auto; scroll-behavior: smooth; }
+        .brand { font-family: 'Teko'; font-size: 2.5rem; text-align: center; color: white; margin-bottom: 30px; text-shadow: 0 0 10px var(--blue); }
+        .brand span { color: var(--gold); }
+        
+        .nav-btn {
+            background: transparent; color: #888; border: none; padding: 12px 15px; 
+            text-align: left; font-size: 1.1rem; cursor: pointer; border-radius: 8px;
+            display: flex; gap: 15px; align-items: center; transition: 0.2s; margin-bottom: 5px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: rgba(0, 240, 255, 0.1); color: var(--blue); }
+
+        .page { display: none; animation: fadeIn 0.3s forwards; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { font-family: 'Teko'; font-size: 2.2rem; border-bottom: 1px solid #333; margin: 0 0 20px 0; color: var(--gold); text-transform: uppercase; }
+
+        .card {
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 15px; margin-bottom: 15px; backdrop-filter: blur(10px);
+        }
+
+        input {
+            background: #000; border: 1px solid #444; color: white; padding: 12px;
+            border-radius: 8px; font-family: 'Rajdhani'; font-size: 1rem; width: 100%;
+            text-align: center;
+        }
+        input:focus { border-color: var(--blue); box-shadow: 0 0 8px rgba(0, 240, 255, 0.3); }
+
+        .row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        
+        .grid-ui { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+
+        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; font-size: 1rem; text-transform: uppercase; }
+        .btn-blue { background: var(--blue); color: black; }
+        .btn-red { background: var(--red); color: white; }
+        .btn-gold { background: var(--gold); color: black; }
+        
+        .win-btn { background: #222; color: white; border: 1px solid #444; padding: 8px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 5px; }
+        .win-btn:hover { background: var(--gold); color: black; border-color: var(--gold); }
+
+        .fab {
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
+            background: #00E676; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: black; box-shadow: 0 4px 15px rgba(0,230,118,0.5); cursor: pointer; z-index: 200; border: none;
+        }
+        @media (max-width: 900px) { .fab { bottom: 90px; right: 20px; width: 55px; height: 55px; } }
+
+        #login { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
+        #toast { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:#00E676; color:black; padding:12px 25px; border-radius:50px; font-weight:bold; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index:3000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+<div id="toast">Saved Successfully!</div>
+
+<div id="login">
+    <h1 style="font-family:'Teko'; font-size:4rem; color:var(--blue); margin:0;">KDFC ADMIN</h1>
+    <p style="color:#888; margin-bottom:30px;">Authorized Access Only</p>
+    <button onclick="signin()" style="background:white; padding:15px 40px; border-radius:50px; font-weight:bold; font-size:1.2rem; cursor:pointer; border:none; display:flex; align-items:center; gap:10px;">
+        <i class="fa-brands fa-google"></i> Login with Google
+    </button>
+    <p id="err" style="color:red; margin-top:20px;"></p>
+</div>
+
+<div class="sidebar">
+    <div class="brand">KDFC <span>PRO</span></div>
+    <button class="nav-btn active" onclick="go('setup')"><i class="fa-solid fa-sliders"></i> <span>Setup</span></button>
+    <button class="nav-btn" onclick="go('qual')"><i class="fa-solid fa-filter"></i> <span>Quals</span></button>
+    <button class="nav-btn" onclick="go('groups')"><i class="fa-solid fa-users"></i> <span>Groups</span></button>
+    <button class="nav-btn" onclick="go('matches')"><i class="fa-solid fa-futbol"></i> <span>Matches</span></button>
+    <button class="nav-btn" onclick="go('knock')"><i class="fa-solid fa-trophy"></i> <span>Bracket</span></button>
+    <button class="nav-btn" onclick="logout()" style="color:var(--red);"><i class="fa-solid fa-power-off"></i> <span>Exit</span></button>
+</div>
+
+<div class="main">
+    <!-- SETUP -->
+    <div id="setup" class="page active">
+        <h2>Tournament Setup</h2>
+        <div class="card" style="max-width:500px;">
+            <label style="color:#aaa; display:block; margin-bottom:8px;">Number of Groups (2, 4, 8)</label>
+            <input type="number" id="nG" value="4">
+            <br><br>
+            <label style="color:#aaa; display:block; margin-bottom:8px;">Players per Group</label>
+            <input type="number" id="nP" value="4">
+            <br><br>
+            <button onclick="initDB()" class="btn-action btn-red">Reset All Tournament Data</button>
+        </div>
+    </div>
+
+    <!-- QUALIFIERS -->
+    <div id="qual" class="page">
+        <h2>Pre-Qualifiers</h2>
+        <button onclick="addQual()" class="btn-action btn-gold" style="max-width:300px;">+ Add New Match</button>
+        <div id="q-ui" class="grid-ui"></div>
+    </div>
+
+    <!-- GROUPS -->
+    <div id="groups" class="page">
+        <h2>Edit Group Players</h2>
+        <div id="g-ui" class="grid-ui"></div>
+    </div>
+
+    <!-- MATCHES -->
+    <div id="matches" class="page">
+        <h2>Group Matches</h2>
+        <div class="row" style="flex-wrap:wrap;">
+            <button onclick="genFix()" class="btn-action btn-blue" style="flex:1; min-width:200px;">1. Generate Fixtures</button>
+            <button onclick="calcStats()" class="btn-action btn-gold" style="flex:1; min-width:200px;">2. Update Rankings</button>
+        </div>
+        <div id="m-ui" class="grid-ui"></div>
+    </div>
+
+    <!-- KNOCKOUT -->
+    <div id="knock" class="page">
+        <h2>Knockout Bracket</h2>
+        <button onclick="genKnock()" class="btn-action btn-blue" style="max-width:350px;">Auto-Fill (Top 2 from Groups)</button>
+        <div id="k-ui" class="grid-ui"></div>
+    </div>
+</div>
+
+<button class="fab" onclick="save()"><i class="fa-solid fa-floppy-disk"></i></button>
+
+<script>
+    const ALLOWED = ["kuzurxyz@gmail.com","riyaroy51825@gmail.com" ]; 
+const firebaseConfig = {
+  apiKey: "AIzaSyDiajlpxXRP01W_phxNQ4IhoUfbs-ZRFxQ",
+  authDomain: "sesion-3-kdfc.firebaseapp.com",
+  databaseURL: "https://sesion-3-kdfc-default-rtdb.firebaseio.com",
+  projectId: "sesion-3-kdfc",
+  storageBucket: "sesion-3-kdfc.firebasestorage.app",
+  messagingSenderId: "374630951299",
+  appId: "1:374630951299:web:1cc4d1b6926fc2c8e7aeb6",
+  measurementId: "G-LLSDC8LN40"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+    let data = { groups: {}, matches: [], bracket: [], qualifiers: [] };
+
+    auth.onAuthStateChanged(u => {
+        if(u && ALLOWED.includes(u.email)) {
+            document.getElementById('login').style.display = 'none';
+            db.ref().on('value', snap => {
+                if(snap.val()) { 
+                    data = snap.val(); 
+                    if(!data.qualifiers) data.qualifiers=[];
+                    renderAll();
+                }
+            });
+        } else if (u) {
+            document.getElementById('err').innerText = "Access Denied: " + u.email;
+            auth.signOut();
+        }
+    });
+
+    function signin() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+    function logout() { auth.signOut(); location.reload(); }
+
+    function renderAll() { renderQ(); renderG(); renderM(); renderK(); }
+
+    function initDB() {
+        if(!confirm("WARNING: This will delete ALL players and scores. Continue?")) return;
+        let nG=document.getElementById('nG').value, nP=document.getElementById('nP').value;
+        let g={}, c="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        for(let i=0; i<nG; i++) {
+            g[c[i]] = Array(parseInt(nP)).fill().map((_,j)=>({ name:`P${j+1}`, photo:'', p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0 }));
+        }
+        db.ref().set({groups:g, matches:[], bracket:[], qualifiers:[]});
+        showToast("Database Reset!");
+    }
+
+    function addQual() { data.qualifiers.push({p1:'A', s1:0, p2:'B', s2:0, date:''}); save(); }
+    function renderQ() {
+        const ui = document.getElementById('q-ui'); ui.innerHTML='';
+        data.qualifiers.forEach((m,i) => {
+            ui.innerHTML += `<div class="card" style="border-left:4px solid var(--red)">
+                <input value="${m.date||''}" onchange="upQ(${i},'date',this.value)" placeholder="Match Date/Time" style="margin-bottom:10px; text-align:left;">
+                <div class="row">
+                    <input value="${m.p1}" onchange="upQ(${i},'p1',this.value)" style="flex:2"> 
+                    <input type="number" value="${m.s1}" onchange="upQ(${i},'s1',this.value)" style="flex:1">
+                    <input type="number" value="${m.s2}" onchange="upQ(${i},'s2',this.value)" style="flex:1">
+                    <input value="${m.p2}" onchange="upQ(${i},'p2',this.value)" style="flex:2">
+                </div>
+                <button onclick="data.qualifiers.splice(${i},1); save();" class="win-btn" style="width:100%; color:var(--red); border-color:rgba(255,0,0,0.2);">Remove Match</button>
+            </div>`;
+        });
+    }
+    function upQ(i,f,v) { data.qualifiers[i][f] = f.includes('s')?parseInt(v):v; }
+
+    function renderG() {
+        const ui = document.getElementById('g-ui'); ui.innerHTML='';
+        Object.keys(data.groups).forEach(g => {
+            let h = `<div class="card"><h3 style="color:var(--gold); margin:0 0 15px 0;">GROUP ${g}</h3>`;
+            data.groups[g].forEach((p,i) => {
+                h += `<div style="display:flex; flex-direction:column; gap:5px; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                    <input value="${p.name}" onchange="data.groups['${g}'][${i}].name=this.value" placeholder="Player Name" style="text-align:left;">
+                    <input value="${p.photo}" onchange="data.groups['${g}'][${i}].photo=this.value" placeholder="Photo URL" style="text-align:left; font-size:0.8rem;">
+                </div>`;
+            });
+            ui.innerHTML += h+'</div>';
+        });
+    }
+
+    function genFix() {
+        if(!confirm("Generate matches for all groups?")) return;
+        let m=[]; Object.keys(data.groups).forEach(g=>{ let p=data.groups[g]; for(let i=0;i<p.length;i++) for(let j=i+1;j<p.length;j++) m.push({p1:p[i].name,p2:p[j].name,s1:0,s2:0,group:g,date:'',played:false}); });
+        data.matches=m; save();
+    }
+
+    function calcStats() {
+        Object.keys(data.groups).forEach(g => { data.groups[g].forEach(p => { p.p=0; p.w=0; p.d=0; p.l=0; p.gf=0; p.ga=0; p.gd=0; p.pts=0; }); });
+        data.matches.forEach(m => {
+            if(!m.played) return;
+            let grp = data.groups[m.group];
+            let p1 = grp.find(p=>p.name===m.p1), p2 = grp.find(p=>p.name===m.p2);
+            if(p1 && p2) {
+                p1.p++; p2.p++; p1.gf+=m.s1; p1.ga+=m.s2; p2.gf+=m.s2; p2.ga+=m.s1;
+                if(m.s1 > m.s2) { p1.w++; p1.pts+=3; p2.l++; }
+                else if(m.s2 > m.s1) { p2.w++; p2.pts+=3; p1.l++; }
+                else { p1.d++; p1.pts+=1; p2.d++; p2.pts+=1; }
+                p1.gd = p1.gf-p1.ga; p2.gd = p2.gf-p2.ga;
+            }
+        });
+        save();
+        showToast("Standings Updated!");
+    }
+
+    function renderM() {
+        const ui = document.getElementById('m-ui'); ui.innerHTML='';
+        data.matches.forEach((m,i) => {
+            ui.innerHTML += `<div class="card" style="border-left:4px solid ${m.played?'#00E676':'#444'}">
+                <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+                    <span style="color:var(--blue); font-weight:bold;">Group ${m.group}</span>
+                    <label class="chk-wrap"><input type="checkbox" ${m.played?'checked':''} onchange="data.matches[${i}].played=this.checked; save();"> Finished</label>
+                </div>
+                <div class="row">
+                    <div style="flex:2; text-align:right;">${m.p1}</div>
+                    <input type="number" value="${m.s1}" onchange="data.matches[${i}].s1=parseInt(this.value)" style="flex:1; max-width:60px;">
+                    <input type="number" value="${m.s2}" onchange="data.matches[${i}].s2=parseInt(this.value)" style="flex:1; max-width:60px;">
+                    <div style="flex:2; text-align:left;">${m.p2}</div>
+                </div>
+                <input value="${m.date||''}" onchange="data.matches[${i}].date=this.value" placeholder="Date/Time" style="margin-top:10px; font-size:0.8rem;">
+            </div>`;
+        });
+    }
+
+    function genKnock() {
+        if(!confirm("Gen Top 2?")) return;
+        const groups = Object.keys(data.groups);
+        let total = groups.length === 2 ? 3 : (groups.length === 4 ? 7 : 15);
+        data.bracket = Array(total).fill().map(() => ({ p1: 'TBD', p1_img: '', s1: 0, p2: 'TBD', p2_img: '', s2: 0, date: '' }));
+        let midx = 0;
+        for (let i = 0; i < groups.length; i += 2) {
+            let g1 = [...data.groups[groups[i]]].sort((a,b) => (b.pts - a.pts) || (b.gd - a.gd));
+            let g2 = [...data.groups[groups[i+1]]].sort((a,b) => (b.pts - a.pts) || (b.gd - a.gd));
+            data.bracket[midx].p1=g1[0].name; data.bracket[midx].p1_img=g1[0].photo;
+            data.bracket[midx].p2=g2[1].name; data.bracket[midx].p2_img=g2[1].photo; midx++;
+            data.bracket[midx].p1=g2[0].name; data.bracket[midx].p1_img=g2[0].photo;
+            data.bracket[midx].p2=g1[1].name; data.bracket[midx].p2_img=g1[1].photo; midx++;
+        }
+        save();
+    }
+
+    function win(i, key) {
+        const total = data.bracket.length;
+        let next = -1;
+        let slot = (i % 2 === 0) ? '1' : '2';
+        if (total === 15) {
+            if (i < 8) next = 8 + Math.floor(i / 2);
+            else if (i < 12) next = 12 + Math.floor((i - 8) / 2);
+            else if (i < 14) next = 14;
+        } else if (total === 7) {
+            if (i < 4) next = 4 + Math.floor(i / 2);
+            else if (i < 6) next = 6;
+        } else if (total === 3) {
+            if (i < 2) next = 2;
+        }
+        if (next !== -1) {
+            data.bracket[next]['p' + slot] = data.bracket[i][key];
+            data.bracket[next]['p' + slot + '_img'] = data.bracket[i][key + '_img'];
+            save();
+            showToast("Winner moved to Match " + (next + 1));
+        }
+    }
+
+    function renderK() {
+        const ui = document.getElementById('k-ui'); ui.innerHTML='';
+        if(!data.bracket) return;
+        data.bracket.forEach((m,i) => {
+            ui.innerHTML += `<div class="card" style="border:1px solid var(--gold)">
+                <div style="color:var(--gold); font-size:0.8rem; margin-bottom:10px;">MATCH ${i+1}</div>
+                <div class="row">
+                    <span style="flex:3;">${m.p1}</span>
+                    <input type="number" value="${m.s1}" onchange="data.bracket[${i}].s1=parseInt(this.value)" style="flex:1; max-width:55px;">
+                    <button class="win-btn" onclick="win(${i},'p1')">W</button>
+                </div>
+                <div class="row">
+                    <span style="flex:3;">${m.p2}</span>
+                    <input type="number" value="${m.s2}" onchange="data.bracket[${i}].s2=parseInt(this.value)" style="flex:1; max-width:55px;">
+                    <button class="win-btn" onclick="win(${i},'p2')">W</button>
+                </div>
+                <input value="${m.date||''}" onchange="data.bracket[${i}].date=this.value" placeholder="Date" style="margin-top:10px; font-size:0.8rem;">
+            </div>`;
+        });
+    }
+
+    function upK(i,f,v) { data.bracket[i][f] = (f==='s1'||f==='s2')?parseInt(v):v; }
+    function save() { db.ref().set(data); showToast("Saved to Cloud!"); }
+    function showToast(m) { let t=document.getElementById('toast'); t.innerText=m; t.style.top="20px"; setTimeout(()=>t.style.top="-60px", 2000); }
+    function go(id) {
+        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const btn = document.querySelector(`[onclick="go('${id}')"]`);
+        if(btn) btn.classList.add('active');
+    }
+</script>
+</body>
+</html>
