@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player  KDFC CHAMPIONSHIP—S3 (2026)</title>
+    <title>Player Showcase</title>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Firebase SDK -->
@@ -19,6 +19,11 @@
             --text-gray: #94a3b8;
         }
 
+        /* Prevent overflow and manage sizing across devices */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
             background-color: var(--bg-black);
             font-family: 'Poppins', sans-serif;
@@ -28,24 +33,28 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            padding-bottom: 40px;
         }
 
         /* --- NAVBAR --- */
         .navbar {
-            padding: 30px;
+            padding: 20px;
             display: flex;
-            gap: 15px;
+            flex-wrap: wrap; /* Allows items to wrap on narrow screens */
+            justify-content: center;
+            gap: 10px;
         }
         .nav-item {
             font-family: 'Oswald', sans-serif;
-            padding: 10px 30px;
+            padding: 8px 20px;
             border-radius: 50px;
-            font-size: 14px;
+            font-size: 13px;
             text-decoration: none;
             border: 1px solid #2a2a2a;
             background: #121212;
             color: #aaa;
             text-transform: uppercase;
+            white-space: nowrap;
         }
         .nav-item.active {
             background: var(--gaming-yellow);
@@ -53,25 +62,24 @@
             box-shadow: 0 0 15px rgba(255, 223, 0, 0.3);
         }
 
-        /* --- HORIZONTAL GRID (3 CARDS) --- */
+        /* --- RESPONSIVE GRID (UNLIMITED CARDS) --- */
         .card-container {
-            display: flex;
-            justify-content: center;
+            display: grid;
+            /* Automatically creates columns based on available space */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 25px;
-            padding: 40px;
+            padding: 20px;
             width: 100%;
             max-width: 1200px;
-            flex-wrap: nowrap; /* Keeps them in one line */
         }
 
         .card {
-            flex: 1;
-            max-width: 320px;
             background: var(--card-bg);
             border-radius: 20px;
             border: 1px solid #1e293b;
             overflow: hidden;
             transition: transform 0.3s ease;
+            width: 100%; /* Adapts to grid cell size */
         }
 
         .card:hover {
@@ -145,28 +153,28 @@
 
     <div class="card-container" id="cardList">
         <!-- Static Loading State -->
-        <p>Fetching Player Data...</p>
+        <p style="grid-column: 1 / -1; text-align: center;">Fetching Player Data...</p>
     </div>
 
     <script>
-        // REPLACE WITH YOUR FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyDc0l9Fr-i1RJchaaeRMlUUzwzT2v5zuTY",
-  authDomain: "card-beaa8.firebaseapp.com",
-  databaseURL: "https://card-beaa8-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "card-beaa8",
-  storageBucket: "card-beaa8.firebasestorage.app",
-  messagingSenderId: "973719246951",
-  appId: "1:973719246951:web:fac8c8beae6aba55329cc2",
-  measurementId: "G-BEFJY7RCDW"
-};
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc0l9Fr-i1RJchaaeRMlUUzwzT2v5zuTY",
+            authDomain: "card-beaa8.firebaseapp.com",
+            databaseURL: "https://card-beaa8-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "card-beaa8",
+            storageBucket: "card-beaa8.firebasestorage.app",
+            messagingSenderId: "973719246951",
+            appId: "1:973719246951:web:fac8c8beae6aba55329cc2",
+            measurementId: "G-BEFJY7RCDW"
+        };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         function loadCards() {
-            // .limitToLast(3) ensures only the latest 3 players show
-            db.ref('players').limitToLast(3).on('value', (snapshot) => {
+            // Removed .limitToLast(3) to fetch all available players
+            db.ref('players').on('value', (snapshot) => {
                 const cardList = document.getElementById('cardList');
                 cardList.innerHTML = '';
                 const data = snapshot.val();
@@ -179,19 +187,18 @@ const firebaseConfig = {
                         cardList.innerHTML += `
                             <div class="card">
                                 <div class="photo-box">
-                                    <img src="${player.photoURL}" alt="Player">
-                                   
+                                    <img src="${player.photoURL || 'https://via.placeholder.com/320x260'}" alt="Player">
                                 </div>
                                 <div class="card-body">
-                                    <h2 class="player-name">${player.name}</h2>
-                                    <div class="info-field"><span>🎮</span> ${player.uniqueID}</div>
-                                    <div class="info-field"><span>📱</span> ${player.device}</div>
+                                    <h2 class="player-name">${player.name || 'Unknown Name'}</h2>
+                                    <div class="info-field"><span>🎮</span> ${player.uniqueID || 'N/A'}</div>
+                                    <div class="info-field"><span>📱</span> ${player.device || 'N/A'}</div>
                                 </div>
                             </div>
                         `;
                     });
                 } else {
-                    cardList.innerHTML = '<p>No players found in database.</p>';
+                    cardList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No players found in database.</p>';
                 }
             });
         }
