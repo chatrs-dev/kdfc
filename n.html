@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDFC S3 Knockout</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Rajdhani:wght@500;700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #FFD700;
+            --gold-glow: rgba(255, 215, 0, 0.4);
+            --blue: #00F0FF;
+            --blue-glow: rgba(0, 240, 255, 0.3);
+            --bronze: #cd7f32;
+            --win: #00FF66;
+            --dark-bg: #050505;
+            --card-bg: rgba(20, 20, 20, 0.7);
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            background: var(--dark-bg);
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #050505 70%);
+            color: white; 
+            font-family: 'Rajdhani', sans-serif; 
+            margin: 0; 
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+            background: rgba(0,0,0,0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 10px; padding: 15px 20px;
+            overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+        }
+        nav::-webkit-scrollbar { display: none; }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); 
+            color: #ccc; padding: 8px 20px; border-radius: 50px;
+            font-family: 'Teko', sans-serif; font-size: 1.1rem; cursor: pointer;
+            transition: 0.3s; text-transform: uppercase; text-decoration: none;
+            flex-shrink: 0;
+        }
+        .nav-btn.active { 
+            background: var(--gold); color: black; border-color: var(--gold); 
+            font-weight: bold; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .container { padding: 110px 10px 40px; }
+
+        .header-section { text-align: center; margin-bottom: 40px; }
+
+        h1 { 
+            font-family: 'Teko'; font-size: 4rem; margin: 0; text-transform: uppercase; 
+            background: linear-gradient(to bottom, #fff 30%, var(--gold) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px var(--gold-glow));
+        }
+
+        /* --- BRACKET AREA --- */
+        .bracket-scroll { 
+            display: flex; gap: 40px; overflow-x: auto; 
+            padding: 20px 10px 60px 10px;
+            scrollbar-width: thin; scrollbar-color: var(--gold) transparent;
+            min-height: 1350px;
+        }
+
+        .round-col { 
+            min-width: 300px; flex-shrink: 0; 
+            display: flex; flex-direction: column; 
+        }
+
+        .round-title { 
+            text-align: center; font-family: 'Teko'; font-size: 2rem; 
+            color: white; border-bottom: 2px solid var(--gold);
+            margin-bottom: 20px; text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .round-matches {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            gap: 15px;
+        }
+
+        /* MATCH CARD */
+        .b-match { 
+            background: var(--card-bg); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            padding: 15px; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: 0.3s;
+        }
+
+        .b-team { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+        .p-info { display: flex; align-items: center; gap: 12px; width: 75%; }
+        .p-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #333; object-fit: cover; }
+        .p-name { font-weight: 700; font-size: 1rem; color: #eee; text-transform: uppercase; font-family: 'Oswald'; }
+        .b-score { font-family: 'Teko'; font-size: 2.2rem; color: #444; width: 25%; text-align: right; }
+
+        /* WINNER GLOW */
+        .winner .p-name { color: #fff; text-shadow: 0 0 10px var(--win); }
+        .winner .b-score { color: var(--gold); }
+        .winner .p-img { border-color: var(--win); transform: scale(1.1); box-shadow: 0 0 10px var(--win); }
+
+        /* SPECIAL MATCH STYLES */
+        .grand-final { 
+            border: 2px solid var(--gold) !important; transform: scale(1.05); 
+            box-shadow: 0 0 30px var(--gold-glow) !important;
+            margin-bottom: 15px;
+        }
+        .third-place { border-left: 5px solid var(--bronze) !important; opacity: 0.8; }
+        .match-label { font-family: 'Teko'; font-size: 1.2rem; color: var(--blue); text-transform: uppercase; margin-bottom: 5px; display: block; text-align: center;}
+
+        .vs-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0; }
+
+        @media (max-width: 480px) {
+            .round-col { min-width: 280px; }
+            h1 { font-size: 2.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="nav-btn">Home</a>   
+        <a href="n.html" class="nav-btn  active">Knockout</a> 
+        <a href="card.html" class="nav-btn">Player info</a>
+        <a href="rule.html" class="nav-btn">Rules</a>
+         <a href="help.html" class="nav-btn">help</a>
+    </nav>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>KDFC S3 Knockout</h1>
+        </div>
+
+        <div id="ui-bracket" class="bracket-scroll">
+            <center style="width:100%; color:#888;">LOADING ...</center>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCF7wim2k_4DVdTM68glVmRnJQdoUF1bvg",
+  authDomain: "s3-player-info.firebaseapp.com",
+  databaseURL: "https://s3-player-info-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "s3-player-info",
+  storageBucket: "s3-player-info.firebasestorage.app",
+  messagingSenderId: "639405975386",
+  appId: "1:639405975386:web:063991e23204c6d1af7563",
+  measurementId: "G-1W0R47GXYG"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Regular Expression Penalty Score Parser
+    function parseScore(val) {
+        if (val === null || val === undefined || val === '') return null;
+        const str = String(val).trim();
+        if (str === '') return null;
+        
+        // Match standard format "X(Y)" or "X (Y)"
+        const match = str.match(/^(\d+)\s*\((\d+)\)$/);
+        if (match) {
+            return {
+                main: parseInt(match[1], 10),
+                pens: parseInt(match[2], 10)
+            };
+        }
+        // Match standard single numbers
+        const num = parseInt(str, 10);
+        if (!isNaN(num)) {
+            return {
+                main: num,
+                pens: null
+            };
+        }
+        return null;
+    }
+
+    // Compares regular time scores first, then penalty scores if tied
+    function compareScores(val1, val2) {
+        const s1 = parseScore(val1);
+        const s2 = parseScore(val2);
+        if (s1 === null || s2 === null) return 0;
+        
+        if (s1.main > s2.main) return 1;
+        if (s1.main < s2.main) return -1;
+        
+        if (s1.pens !== null && s2.pens !== null) {
+            if (s1.pens > s2.pens) return 1;
+            if (s1.pens < s2.pens) return -1;
+        }
+        return 0; 
+    }
+
+    db.ref().on('value', snap => {
+        const d = snap.val();
+        const b = d.bracket || [];
+        const groups = d.groups;
+        const ui = document.getElementById('ui-bracket'); 
+        ui.innerHTML = '';
+
+        if(!b) return ui.innerHTML = "No Bracket Data";
+
+        function getP(name) {
+            if(!groups || !name || name === 'TBD') return 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            for(let k in groups) {
+                let found = groups[k].find(x => x.name === name);
+                if(found && found.photo) return found.photo;
+            }
+            return 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        }
+
+        function createMatchHTML(m, customClass = "", label = "") {
+            const match = m || {};
+            const p1 = match.p1 || 'TBD';
+            const p2 = match.p2 || 'TBD';
+            const s1 = match.s1;
+            const s2 = match.s2;
+
+            const comparison = compareScores(s1, s2);
+            const win1 = (comparison === 1) ? 'winner' : '';
+            const win2 = (comparison === -1) ? 'winner' : '';
+
+            return `
+                <div class="match-box">
+                    ${label ? `<span class="match-label">${label}</span>` : ''}
+                    <div class="b-match ${customClass}">
+                        <div class="b-team ${win1}">
+                            <div class="p-info">
+                                <img src="${match.p1_img || getP(p1)}" class="p-img">
+                                <span class="p-name">${p1}</span>
+                            </div>
+                            <span class="b-score">${s1 ?? '-'}</span>
+                        </div>
+                        <div class="vs-divider"></div>
+                        <div class="b-team ${win2}">
+                            <div class="p-info">
+                                <img src="${match.p2_img || getP(p2)}" class="p-img">
+                                <span class="p-name">${p2}</span>
+                            </div>
+                            <span class="b-score">${s2 ?? '-'}</span>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // Round of 16 (Matches index 0 to 7)
+        let r16Matches = '';
+        for(let i = 0; i < 8; i++) {
+            r16Matches += createMatchHTML(b[i], "", `Match ${i + 1}`);
+        }
+        let r16Column = `
+            <div class="round-col">
+                <div class="round-title">Round of 16</div>
+                <div class="round-matches">
+                    ${r16Matches}
+                </div>
+            </div>`;
+
+        // Quarter Finals (Matches index 8 to 11)
+        let qfMatches = '';
+        for(let i = 8; i < 12; i++) {
+            qfMatches += createMatchHTML(b[i], "", `QF ${i - 7}`);
+        }
+        let qfColumn = `
+            <div class="round-col">
+                <div class="round-title">Quarter Finals</div>
+                <div class="round-matches">
+                    ${qfMatches}
+                </div>
+            </div>`;
+
+        // Semi Finals (Matches index 12 to 13)
+        let sfMatches = '';
+        for(let i = 12; i < 14; i++) {
+            sfMatches += createMatchHTML(b[i], "", `Semi Final ${i - 11}`);
+        }
+        let sfColumn = `
+            <div class="round-col">
+                <div class="round-title">Semi Finals</div>
+                <div class="round-matches">
+                    ${sfMatches}
+                </div>
+            </div>`;
+
+        // Finals (Matches index 14 & 15)
+        let finalMatches = '';
+        finalMatches += createMatchHTML(b[14], "grand-final", "Grand Final");
+        finalMatches += createMatchHTML(b[15], "third-place", "3rd Place Playoff");
+        let finalColumn = `
+            <div class="round-col">
+                <div class="round-title">Finals</div>
+                <div class="round-matches">
+                    ${finalMatches}
+                </div>
+            </div>`;
+
+        ui.innerHTML = r16Column + qfColumn + sfColumn + finalColumn;
+    });
+    </script>
+</body>
+</html>

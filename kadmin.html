@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity Cup - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Rajdhani:wght@500;700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #FFD700;
+            --gold-glow: rgba(255, 215, 0, 0.4);
+            --blue: #00F0FF;
+            --blue-glow: rgba(0, 240, 255, 0.3);
+            --bronze: #cd7f32;
+            --win: #00FF66;
+            --dark-bg: #050505;
+            --card-bg: rgba(20, 20, 20, 0.85);
+            --card-border: rgba(255, 255, 255, 0.1);
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            background: var(--dark-bg);
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #050505 70%);
+            color: white; 
+            font-family: 'Rajdhani', sans-serif; 
+            margin: 0; 
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+            background: rgba(0,0,0,0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 10px; padding: 15px 20px;
+            overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+        }
+        nav::-webkit-scrollbar { display: none; }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); 
+            color: #ccc; padding: 8px 20px; border-radius: 50px;
+            font-family: 'Teko', sans-serif; font-size: 1.1rem; cursor: pointer;
+            transition: 0.3s; text-transform: uppercase; text-decoration: none;
+            flex-shrink: 0;
+        }
+        .nav-btn.active { 
+            background: var(--gold); color: black; border-color: var(--gold); 
+            font-weight: bold; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 110px 15px 40px; 
+        }
+
+        .header-section { text-align: center; margin-bottom: 30px; }
+
+        h1 { 
+            font-family: 'Teko'; font-size: 3.5rem; margin: 0; text-transform: uppercase; 
+            background: linear-gradient(to bottom, #fff 30%, var(--gold) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px var(--gold-glow));
+        }
+        
+        .subtitle {
+            color: #888; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin-top: -5px;
+        }
+
+        /* --- DASHBOARD CONTROLS --- */
+        .dashboard-actions {
+            display: flex; gap: 15px; margin-bottom: 30px; justify-content: center; flex-wrap: wrap;
+        }
+        .btn-action {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 10px 20px; border-radius: 8px; font-family: 'Teko', sans-serif;
+            font-size: 1.2rem; cursor: pointer; transition: 0.2s; text-transform: uppercase;
+        }
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.15); border-color: var(--blue);
+            box-shadow: 0 0 10px var(--blue-glow);
+        }
+        .btn-danger {
+            background: rgba(255, 50, 50, 0.15); border-color: rgba(255, 50, 50, 0.4);
+        }
+        .btn-danger:hover {
+            background: rgba(255, 50, 50, 0.3); border-color: #ff3333;
+            box-shadow: 0 0 10px rgba(255, 50, 50, 0.3);
+        }
+
+        /* --- SEEDING COMPANION --- */
+        .seeding-panel {
+            background: rgba(20, 20, 20, 0.9); border: 1px dashed var(--gold);
+            padding: 20px; border-radius: 15px; margin-bottom: 35px; display: none;
+        }
+        .seeding-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px;
+            max-height: 400px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px;
+        }
+        .seed-row {
+            background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .seed-row label {
+            font-family: 'Teko'; font-size: 1.1rem; color: var(--gold); display: block; margin-bottom: 5px;
+        }
+
+        /* --- ROUND TABS --- */
+        .tabs {
+            display: flex; gap: 10px; margin-bottom: 30px; justify-content: center;
+            overflow-x: auto; padding-bottom: 5px;
+        }
+        .tab-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+            color: #aaa; padding: 12px 25px; border-radius: 8px;
+            font-family: 'Teko', sans-serif; font-size: 1.3rem; cursor: pointer;
+            transition: 0.3s; text-transform: uppercase; flex-shrink: 0;
+        }
+        .tab-btn.active {
+            background: var(--blue); color: black; border-color: var(--blue);
+            box-shadow: 0 0 15px var(--blue-glow); font-weight: bold;
+        }
+
+        /* --- MATCH CARD GRID --- */
+        .matches-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;
+        }
+        .admin-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 15px; padding: 20px; transition: 0.3s;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        .admin-card:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
+            margin-bottom: 15px; font-family: 'Teko'; font-size: 1.4rem; color: var(--gold);
+        }
+        .match-tag {
+            background: rgba(0,240,255,0.1); color: var(--blue); border: 1px solid var(--blue);
+            padding: 2px 10px; border-radius: 5px; font-size: 1rem;
+        }
+
+        /* Team Entry Styles */
+        .team-section {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px; padding: 12px; margin-bottom: 12px;
+        }
+        .team-title {
+            font-family: 'Oswald'; font-size: 0.9rem; margin-bottom: 8px; color: #bbb;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .team-flex {
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .p-preview-img {
+            width: 45px; height: 45px; border-radius: 50%; border: 2px solid #444;
+            object-fit: cover; flex-shrink: 0; margin-top: 4px;
+        }
+        .inputs-container {
+            flex-grow: 1; display: flex; flex-direction: column; gap: 8px;
+        }
+        
+        /* Form Inputs */
+        input[type="text"] {
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15);
+            color: white; padding: 8px 12px; border-radius: 6px; font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem; width: 100%; transition: 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--blue); outline: none; box-shadow: 0 0 5px var(--blue-glow);
+        }
+        
+        .score-row {
+            display: flex; align-items: center; gap: 10px; justify-content: flex-end;
+        }
+        .score-row label {
+            font-family: 'Teko'; font-size: 1.2rem; color: #fff;
+        }
+        input[type="text"].score-input {
+            width: 80px; text-align: center; font-family: 'Teko', sans-serif;
+            font-size: 1.4rem; color: var(--gold); font-weight: bold;
+        }
+
+        .btn-update {
+            background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%);
+            color: black; border: none; padding: 12px; border-radius: 8px;
+            font-family: 'Teko', sans-serif; font-size: 1.3rem; font-weight: bold;
+            cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-update:hover {
+            transform: translateY(-2px); box-shadow: 0 5px 15px var(--gold-glow);
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2.8rem; }
+            .tabs { justify-content: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="nav-btn">Home</a>   
+        <a href="n.html" class="nav-btn">Knockout</a>
+        <a href="admin.html" class="nav-btn active">Admin</a>
+    </nav>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Unity Cup Admin</h1>
+            <div class="subtitle">Live Score & Bracket progression manager</div>
+        </div>
+
+        <div class="dashboard-actions">
+            <button class="btn-action" onclick="toggleSeedingPanel()">⚡ Quick Seeding Companion</button>
+            <button class="btn-action" onclick="refreshAdminGrid()">🔄 Refresh Form Data</button>
+            <button class="btn-action btn-danger" onclick="resetBracketScores()">⚠️ Reset Scores & Progress</button>
+        </div>
+
+        <!-- Seeding Companion Panel -->
+        <div id="seedingPanel" class="seeding-panel">
+            <h2 style="font-family:'Teko'; color:var(--gold); margin-top:0; font-size:1.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
+                Seed All 16 Initial Players (Matches 1 to 8)
+            </h2>
+            <div class="seeding-grid" id="seedingInputs"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-action" style="background-color: var(--gold); color:black;" onclick="applySeeding()">Distribute Seeds</button>
+                <button class="btn-action" onclick="toggleSeedingPanel()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Tabbed Navigation per Round -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchRound('r16', this)">Round of 16</button>
+            <button class="tab-btn" onclick="switchRound('qf', this)">Quarter Finals</button>
+            <button class="tab-btn" onclick="switchRound('sf', this)">Semi Finals</button>
+            <button class="tab-btn" onclick="switchRound('finals', this)">Finals</button>
+        </div>
+
+        <!-- Matches Dynamic Form Grid -->
+        <div class="matches-grid" id="adminGrid">
+            <div style="text-align:center; grid-column: 1/-1; color:#888;">LOADING TOURNAMENT DATA...</div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCF7wim2k_4DVdTM68glVmRnJQdoUF1bvg",
+            authDomain: "s3-player-info.firebaseapp.com",
+            databaseURL: "https://s3-player-info-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "s3-player-info",
+            storageBucket: "s3-player-info.firebasestorage.app",
+            messagingSenderId: "639405975386",
+            appId: "1:639405975386:web:063991e23204c6d1af7563",
+            measurementId: "G-1W0R47GXYG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let bracketData = [];
+        let groupData = null;
+        let activeRound = 'r16';
+        let isInitialLoad = true; // Control flag to block background redraws from destroying user inputs
+
+        // Listen to Database Updates
+        db.ref().on('value', snap => {
+            const data = snap.val();
+            bracketData = data.bracket || [];
+            groupData = data.groups;
+            
+            // Only rebuild forms on initial page load to protect currently typed inputs
+            if (isInitialLoad) {
+                renderAdminMatches();
+                isInitialLoad = false;
+            }
+        });
+
+        function getP(name) {
+            if(!groupData || !name || name === 'TBD') return 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            for(let k in groupData) {
+                let found = groupData[k].find(x => x.name === name);
+                if(found && found.photo) return found.photo;
+            }
+            return 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        }
+
+        const roundIndices = {
+            r16: { start: 0, end: 7, labelPrefix: "Match" },
+            qf: { start: 8, end: 11, labelPrefix: "QF" },
+            sf: { start: 12, end: 13, labelPrefix: "Semi" },
+            finals: { start: 14, end: 15, labelPrefix: "Final" }
+        };
+
+        function switchRound(roundKey, btn) {
+            activeRound = roundKey;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderAdminMatches(); // Safely rebuild when switching tabs
+        }
+
+        function refreshAdminGrid() {
+            renderAdminMatches();
+            alert("Forms successfully refreshed with latest database values!");
+        }
+
+        // Penalty-Aware Score Parsers
+        function parseScore(val) {
+            if (val === null || val === undefined || val === '') return null;
+            const str = String(val).trim();
+            if (str === '') return null;
+            
+            // Match penalty structures, e.g. "1(3)" or "1 (3)"
+            const match = str.match(/^(\d+)\s*\((\d+)\)$/);
+            if (match) {
+                return {
+                    main: parseInt(match[1], 10),
+                    pens: parseInt(match[2], 10)
+                };
+            }
+            // Fallback for flat numbers
+            const num = parseInt(str, 10);
+            if (!isNaN(num)) {
+                return {
+                    main: num,
+                    pens: null
+                };
+            }
+            return null;
+        }
+
+        function compareScores(val1, val2) {
+            const s1 = parseScore(val1);
+            const s2 = parseScore(val2);
+            if (s1 === null || s2 === null) return 0;
+            
+            if (s1.main > s2.main) return 1;
+            if (s1.main < s2.main) return -1;
+            
+            // If main scores tie, compare penalties
+            if (s1.pens !== null && s2.pens !== null) {
+                if (s1.pens > s2.pens) return 1;
+                if (s1.pens < s2.pens) return -1;
+            }
+            return 0; 
+        }
+
+        function renderAdminMatches() {
+            const grid = document.getElementById('adminGrid');
+            grid.innerHTML = '';
+            
+            const limits = roundIndices[activeRound];
+            for (let i = limits.start; i <= limits.end; i++) {
+                const m = bracketData[i] || {};
+                
+                let matchLabel = `${limits.labelPrefix} ${i - limits.start + 1}`;
+                if (i === 14) matchLabel = "Grand Final";
+                if (i === 15) matchLabel = "3rd Place Playoff";
+
+                const cardHTML = `
+                    <div class="admin-card">
+                        <div class="card-header">
+                            <span>${matchLabel}</span>
+                            <span class="match-tag">ID: #${i}</span>
+                        </div>
+
+                        <!-- Player 1 Profile -->
+                        <div class="team-section">
+                            <div class="team-title">Player 1</div>
+                            <div class="team-flex">
+                                <img src="${m.p1_img || getP(m.p1)}" id="p1-img-prev-${i}" class="p-preview-img">
+                                <div class="inputs-container">
+                                    <input type="text" id="m-${i}-p1" placeholder="P1 Name" value="${m.p1 || ''}" oninput="updateLiveImagePreview(${i}, 'p1', this.value)">
+                                    <input type="text" id="m-${i}-p1-img" placeholder="Photo URL (Optional)" value="${m.p1_img || ''}" oninput="updateLiveImageUrlPreview(${i}, 'p1', this.value)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Player 2 Profile -->
+                        <div class="team-section">
+                            <div class="team-title">Player 2</div>
+                            <div class="team-flex">
+                                <img src="${m.p2_img || getP(m.p2)}" id="p2-img-prev-${i}" class="p-preview-img">
+                                <div class="inputs-container">
+                                    <input type="text" id="m-${i}-p2" placeholder="P2 Name" value="${m.p2 || ''}" oninput="updateLiveImagePreview(${i}, 'p2', this.value)">
+                                    <input type="text" id="m-${i}-p2-img" placeholder="Photo URL (Optional)" value="${m.p2_img || ''}" oninput="updateLiveImageUrlPreview(${i}, 'p2', this.value)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Score Input -->
+                        <div class="score-row">
+                            <label>Scores: </label>
+                            <input type="text" id="m-${i}-s1" class="score-input" placeholder="-" value="${m.s1 ?? ''}">
+                            <span style="font-family:'Teko'; font-size:1.5rem; color:#888;">VS</span>
+                            <input type="text" id="m-${i}-s2" class="score-input" placeholder="-" value="${m.s2 ?? ''}">
+                        </div>
+
+                        <button class="btn-update" onclick="saveMatchData(${i})">Save Match & Progress</button>
+                    </div>`;
+                grid.innerHTML += cardHTML;
+            }
+        }
+
+        function updateLiveImagePreview(idx, player, name) {
+            const prev = document.getElementById(`${player}-img-prev-${idx}`);
+            const inputImg = document.getElementById(`m-${idx}-${player}-img`).value;
+            if(!inputImg) {
+                prev.src = getP(name);
+            }
+        }
+        function updateLiveImageUrlPreview(idx, player, url) {
+            const prev = document.getElementById(`${player}-img-prev-${idx}`);
+            if(url) {
+                prev.src = url;
+            } else {
+                const name = document.getElementById(`m-${idx}-${player}`).value;
+                prev.src = getP(name);
+            }
+        }
+
+        function getProgressionUpdates(matchIdx, winner, loser) {
+            let updates = {};
+            
+            const nextWinName = winner ? (winner.name || 'TBD') : 'TBD';
+            const nextWinImg = winner ? (winner.img || '') : '';
+            const nextLoseName = loser ? (loser.name || 'TBD') : 'TBD';
+            const nextLoseImg = loser ? (loser.img || '') : '';
+
+            if (matchIdx >= 0 && matchIdx <= 7) {
+                const nextMatchIdx = 8 + Math.floor(matchIdx / 2);
+                const slot = (matchIdx % 2 === 0) ? 'p1' : 'p2';
+                updates[`bracket/${nextMatchIdx}/${slot}`] = nextWinName;
+                updates[`bracket/${nextMatchIdx}/${slot}_img`] = nextWinImg;
+            } 
+            else if (matchIdx >= 8 && matchIdx <= 11) {
+                const nextMatchIdx = 12 + Math.floor((matchIdx - 8) / 2);
+                const slot = (matchIdx % 2 === 0) ? 'p1' : 'p2';
+                updates[`bracket/${nextMatchIdx}/${slot}`] = nextWinName;
+                updates[`bracket/${nextMatchIdx}/${slot}_img`] = nextWinImg;
+            } 
+            else if (matchIdx >= 12 && matchIdx <= 13) {
+                const slot = (matchIdx === 12) ? 'p1' : 'p2';
+                updates[`bracket/14/${slot}`] = nextWinName;
+                updates[`bracket/14/${slot}_img`] = nextWinImg;
+                updates[`bracket/15/${slot}`] = nextLoseName;
+                updates[`bracket/15/${slot}_img`] = nextLoseImg;
+            }
+            return updates;
+        }
+
+        function saveMatchData(index) {
+            const p1 = document.getElementById(`m-${index}-p1`).value.trim() || 'TBD';
+            const p1_img = document.getElementById(`m-${index}-p1-img`).value.trim() || '';
+            const s1Val = document.getElementById(`m-${index}-s1`).value.trim();
+
+            const p2 = document.getElementById(`m-${index}-p2`).value.trim() || 'TBD';
+            const p2_img = document.getElementById(`m-${index}-p2-img`).value.trim() || '';
+            const s2Val = document.getElementById(`m-${index}-s2`).value.trim();
+
+            let updates = {};
+            updates[`bracket/${index}/p1`] = p1;
+            updates[`bracket/${index}/p1_img`] = p1_img;
+            updates[`bracket/${index}/s1`] = s1Val === "" ? null : s1Val;
+            updates[`bracket/${index}/p2`] = p2;
+            updates[`bracket/${index}/p2_img`] = p2_img;
+            updates[`bracket/${index}/s2`] = s2Val === "" ? null : s2Val;
+
+            let winner = null;
+            let loser = null;
+
+            const comparison = compareScores(s1Val, s2Val);
+            if (s1Val !== "" && s2Val !== "") {
+                if (comparison === 1) {
+                    winner = { name: p1, img: p1_img };
+                    loser = { name: p2, img: p2_img };
+                } else if (comparison === -1) {
+                    winner = { name: p2, img: p2_img };
+                    loser = { name: p1, img: p1_img };
+                } else {
+                    alert("Scores are currently tied. Please set a clear winner (using penalty format like 1(3) and 1(2) if necessary).");
+                    return;
+                }
+            }
+
+            const progUpdates = getProgressionUpdates(index, winner, loser);
+            Object.assign(updates, progUpdates);
+
+            db.ref().update(updates)
+                .then(() => alert(`Match ${index + 1} score and pathway saved successfully.`))
+                .catch(err => alert("Database Save Failure: " + err.message));
+        }
+
+        function resetBracketScores() {
+            if(!confirm("Are you sure you want to completely RESET all scores and progressions? Round of 16 player seeds will be kept, but scores and future rounds will be cleared.")) return;
+
+            let updates = {};
+            for(let i = 0; i < 16; i++) {
+                if(i < 8) {
+                    updates[`bracket/${i}/s1`] = null;
+                    updates[`bracket/${i}/s2`] = null;
+                } else {
+                    updates[`bracket/${i}/p1`] = "TBD";
+                    updates[`bracket/${i}/p1_img`] = "";
+                    updates[`bracket/${i}/s1`] = null;
+                    updates[`bracket/${i}/p2`] = "TBD";
+                    updates[`bracket/${i}/p2_img`] = "";
+                    updates[`bracket/${i}/s2`] = null;
+                }
+            }
+
+            db.ref().update(updates)
+                .then(() => {
+                    alert("All bracket scores and pathways reset to zero!");
+                    renderAdminMatches(); // Force secure UI sync
+                })
+                .catch(err => alert("Reset failure: " + err.message));
+        }
+
+        function toggleSeedingPanel() {
+            const panel = document.getElementById('seedingPanel');
+            if (panel.style.display === "block") {
+                panel.style.display = "none";
+            } else {
+                panel.style.display = "block";
+                setupSeedingInputs();
+            }
+        }
+
+        function setupSeedingInputs() {
+            const container = document.getElementById('seedingInputs');
+            container.innerHTML = '';
+            for (let i = 1; i <= 16; i++) {
+                container.innerHTML += `
+                    <div class="seed-row">
+                        <label>Player ${i} Seed</label>
+                        <input type="text" id="seed-name-${i}" placeholder="Name" style="margin-bottom:8px;">
+                        <input type="text" id="seed-img-${i}" placeholder="Photo URL">
+                    </div>`;
+            }
+        }
+
+        function applySeeding() {
+            if(!confirm("Applying these seeds will overwrite the current Round of 16 players! Continue?")) return;
+
+            let updates = {};
+            for (let i = 0; i < 8; i++) {
+                const seed1Index = (i * 2) + 1;
+                const seed2Index = (i * 2) + 2;
+
+                const name1 = document.getElementById(`seed-name-${seed1Index}`).value.trim() || 'TBD';
+                const img1 = document.getElementById(`seed-img-${seed1Index}`).value.trim() || '';
+
+                const name2 = document.getElementById(`seed-name-${seed2Index}`).value.trim() || 'TBD';
+                const img2 = document.getElementById(`seed-img-${seed2Index}`).value.trim() || '';
+
+                updates[`bracket/${i}/p1`] = name1;
+                updates[`bracket/${i}/p1_img`] = img1;
+                updates[`bracket/${i}/s1`] = null;
+
+                updates[`bracket/${i}/p2`] = name2;
+                updates[`bracket/${i}/p2_img`] = img2;
+                updates[`bracket/${i}/s2`] = null;
+            }
+
+            for(let i = 8; i < 16; i++) {
+                updates[`bracket/${i}/p1`] = "TBD";
+                updates[`bracket/${i}/p1_img`] = "";
+                updates[`bracket/${i}/s1`] = null;
+                updates[`bracket/${i}/p2`] = "TBD";
+                updates[`bracket/${i}/p2_img`] = "";
+                updates[`bracket/${i}/s2`] = null;
+            }
+
+            db.ref().update(updates)
+                .then(() => {
+                    alert("Seeding applied successfully! All 8 primary matches are now populated.");
+                    renderAdminMatches(); // Force secure UI sync
+                    toggleSeedingPanel();
+                })
+                .catch(err => alert("Seeding failed: " + err.message));
+        }
+    </script>
+</body>
+</html>
